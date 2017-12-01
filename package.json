@@ -1,0 +1,25 @@
+{
+  "name": "universsr-installer",
+  "version": "1.0.0",
+  "description": "Installer of universsr - React Redux universal boilerplate.",
+  "main": "index.js",
+  "bin": {
+    "universsr": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "universsr",
+    "installer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^2.3.0",
+    "commander": "^2.12.2",
+    "ora": "^1.3.0",
+    "shelljs": "^0.7.8",
+    "slash": "^1.0.0"
+  }
+}
