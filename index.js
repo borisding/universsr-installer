@@ -3,7 +3,6 @@
 require('shelljs/global');
 
 const fs = require('fs');
-const ora = require('ora');
 const chalk = require('chalk');
 const slash = require('slash');
 const program = require('commander');
@@ -16,13 +15,12 @@ const fileExisted = project => fs.existsSync(project);
 
 function create(project, options) {
   try {
-    const projectDir = slash(`${process.cwd()}/${project}`);
-    const spinner = ora();
-
     if (!which('git')) {
       cerror('Cannot proceed. This installer requires git installed on your machine.');
       exit(1);
     }
+
+    const projectDir = slash(`${process.cwd()}/${project}`);
 
     if (!options.clean && fileExisted(projectDir)) {
       if (options.force) {
@@ -51,15 +49,14 @@ function create(project, options) {
       exit(1);
     }
 
-    spinner.start('Start installing dependencies...');
+    cinfo('|> Installing all dependencies from package.json in project...');
 
     if (cd(projectDir) && exec('npm install').code !== 0) {
-      spinner.stop();
       cerror('Failed to install universsr boilerplate dependencies.');
       exit(1);
     }
 
-    spinner.succeed(chalk.green(`Dependencies installed in [${projectDir}]!\n`));
+    csuccess('Dependencies installed in [%s]!\n', [projectDir]);
     cinfo(`|> Start building & running application in [${options.dev ? 'development' : 'production'}] environment.`);
 
     if (options.dev) {
@@ -77,10 +74,27 @@ function create(project, options) {
 
 program
   .version(pkg.version)
-  .arguments('<project>')
-  .description('Create new project by installing universsr boilerplate.')
+  .description('Installing new universsr boilerplate into project directory.')
+  .usage('new [options] <project>')
+  .command('new <project>')
   .option('-c, --clean', 're-install all dependencies without cloning universsr repository.')
-  .option('-d, --dev', 'start project application in development environment.')
-  .option('-f, --force', 'force create new project by clearing directory before installation.')
-  .action(create)
-  .parse(process.argv);
+  .option('-d, --dev', 'start project application in development environment after installation is done.')
+  .option('-f, --force', 'force create new project by clearing project directory before installation starts.')
+  .action(create);
+
+program.on('--help', () => {
+  console.log();
+  console.log('  Examples of options usage for new `my-project`:');
+  console.log();
+  console.log('  Force install: \t%s\t%s', 'universsr new -f my-project', '(remove all and install new copy)');
+  console.log('  Clean install: \t%s\t%s', 'universsr new -c my-project', '(remove all dependencies and reinstall)');
+  console.log('  Run dev install: \t%s\t%s', 'universsr new -d my-project', '(run in development after installation)');
+  console.log(
+    '  Clean & run dev: \t%s\t%s',
+    'universsr new -cd my-project',
+    '(clean and run in development after installation)'
+  );
+  console.log();
+});
+
+program.parse(process.argv);
