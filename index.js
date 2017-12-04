@@ -13,7 +13,7 @@ const cerror = (message, substitution = []) => console.log(chalk.red(`${message}
 const cinfo = (message, substitution = []) => console.log(chalk.cyanBright(`${message}\n`), ...substitution);
 
 const fileExisted = project => fs.existsSync(project);
-const githubRepoPrefix = 'https://github.com/borisding/universsr';
+const githubRepoUrl = 'https://github.com/borisding/universsr';
 let projectDestination;
 
 // create action for installer
@@ -48,7 +48,7 @@ function create(project, options) {
 
 // install by downloading archive approach (default to master)
 function installByDownloding({ release = 'master' }) {
-  const url = `${githubRepoPrefix}/archive/${release}.zip`;
+  const url = `${githubRepoUrl}/archive/${release}.zip`;
   const options = {
     headers: { accept: 'application/zip' },
     mode: '755',
@@ -77,7 +77,7 @@ function installByCloning() {
   }
 
   return Promise.resolve(true)
-    .then(() => exec(`git clone --depth=1 ${githubRepoPrefix}.git ${projectDestination}`))
+    .then(() => exec(`git clone --depth=1 ${githubRepoUrl}.git ${projectDestination}`))
     .then(cmdClone => {
       if (cmdClone.code !== 0) {
         cerror('Failed to clone universsr boilerplate into [%s].', [projectDestination]);

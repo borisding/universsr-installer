@@ -4,21 +4,21 @@
 
 ## Usage
 
-i) Install universsr installer globally
+Install universsr installer globally
 
 ```
 npm i universsr-installer -g
 ```
 
-ii) Example: To create new `my-project` at your current working directory:
+For example: to create new `my-project` at your current working directory:
 
 ```
 universsr new my-project
 ```
 
-* universsr boilerplate will be downloaded and extracted into `my-project` project directory.
+universsr boilerplate will be downloaded and extracted into `my-project` project directory.
 
-## Options & Usage
+## Options & Commands
 
 ```
 Usage: index new [options] <project>
@@ -43,5 +43,4 @@ Usage: index new [options] <project>
  Force download install:       universsr new -f my-project (remove all and install new copy with download method)
  Download release install:     universsr new -r 'v2.0.0' my-project (download release version v2.0.0 and install)
  Force install release:        universsr new -fr 'v2.0.0' my-project (remove all and download release version v2.0.0 and install)
-
 ```
