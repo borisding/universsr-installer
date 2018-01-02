@@ -18,7 +18,6 @@ const cinfo = (message, substitution = []) =>
 
 const fileExisted = target => fs.existsSync(target);
 const githubRepoUrl = 'https://github.com/borisding/universsr';
-const silent = true;
 let projectDestination;
 
 // create action for installer
@@ -30,19 +29,19 @@ function create(project, options) {
       return installProject(options);
     }
 
-    if (options.force) {
-      cinfo('|> Removing `%s` directory including files...', [project]);
-
-      if (rm('-rf', projectDestination).code !== 0) {
-        cerror('Exit. Failed to remove all files.');
-        exit(1);
-      }
-
-      return installProject(options);
-    } else {
+    if (!options.force) {
       cerror('Cannot proceed. Project directory already existed.');
       exit(1);
     }
+
+    cinfo('|> Removing `%s` directory including files...', [project]);
+
+    if (rm('-rf', projectDestination).code !== 0) {
+      cerror('Exit. Failed to remove all files.');
+      exit(1);
+    }
+
+    return installProject(options);
   } catch (err) {
     cerror(err.stack);
     exit(1);
@@ -109,39 +108,36 @@ function installByCloning() {
 function installDependencies() {
   return (
     cd(projectDestination) &&
-    exec(
-      'npm install',
-      { silent },
-      spawnProcess({
-        init: 'Installing required dependencies...',
-        error: 'Failed to install required dependencies.',
-        success: 'Done! Installed dependencies.',
-        wrapup: () => {
-          console.log();
-          cinfo('|> For quick start: `cd %s` and execute `npm start`', [
-            projectDestination.split('/').pop()
-          ]);
-        }
-      })
-    )
+    spawnProcess({
+      cmd: 'npm install',
+      init: 'Installing required dependencies...',
+      error: 'Failed to install required dependencies.',
+      success: 'Done! Installed dependencies.',
+      wrapup: () => {
+        console.log();
+        cinfo('|> For quick start: `cd %s` and execute `npm start`', [
+          projectDestination.split('/').pop()
+        ]);
+      }
+    })
   );
 }
 
 // spawn process callback for async process
-function spawnProcess({ init, error, success, wrapup = null }) {
-  const spinner = ora(init).start();
+function spawnProcess({ cmd, silent = true, ...props }) {
+  const spinner = ora(props.init).start();
 
-  return (code, stdout, stderr) => {
+  return exec(cmd, { silent }, (code, stdout, stderr) => {
     if (code) {
-      spinner.fail(chalk.red(error));
+      spinner.fail(chalk.red(props.error));
       cerror(stderr);
       exit(1);
     }
 
-    spinner.succeed(chalk.green(success));
-    wrapup && wrapup();
+    spinner.succeed(chalk.green(props.success));
+    props.wrapup && props.wrapup();
     exit(0);
-  };
+  });
 }
 
 program
