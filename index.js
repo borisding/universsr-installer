@@ -124,18 +124,18 @@ function installDependencies() {
 }
 
 // spawn process callback for async process
-function spawnProcess({ cmd, silent = true, ...props }) {
-  const spinner = ora(props.init).start();
+function spawnProcess({ cmd, init, error, success, wrapup }) {
+  const spinner = ora(init).start();
 
-  return exec(cmd, { silent }, (code, stdout, stderr) => {
+  return exec(cmd, { silent: true }, (code, stdout, stderr) => {
     if (code) {
-      spinner.fail(chalk.red(props.error));
+      spinner.fail(chalk.red(error));
       cerror(stderr);
       exit(1);
     }
 
-    spinner.succeed(chalk.green(props.success));
-    props.wrapup && props.wrapup();
+    spinner.succeed(chalk.green(success));
+    wrapup && wrapup();
     exit(0);
   });
 }
