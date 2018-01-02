@@ -5,15 +5,20 @@ const chalk = require('chalk');
 const slash = require('slash');
 const program = require('commander');
 const download = require('download');
+const ora = require('ora');
 const pkg = require('./package.json');
 const { cd, exec, exit, rm, which } = require('shelljs');
 
-const csuccess = (message, substitution = []) => console.log(chalk.green(`${message}\n`), ...substitution);
-const cerror = (message, substitution = []) => console.log(chalk.red(`${message}\n`), ...substitution);
-const cinfo = (message, substitution = []) => console.log(chalk.cyanBright(`${message}\n`), ...substitution);
+const csuccess = (message, substitution = []) =>
+  console.log(chalk.green(`${message}\n`), ...substitution);
+const cerror = (message, substitution = []) =>
+  console.log(chalk.red(`${message}\n`), ...substitution);
+const cinfo = (message, substitution = []) =>
+  console.log(chalk.cyanBright(`${message}\n`), ...substitution);
 
-const fileExisted = project => fs.existsSync(project);
+const fileExisted = target => fs.existsSync(target);
 const githubRepoUrl = 'https://github.com/borisding/universsr';
+const silent = true;
 let projectDestination;
 
 // create action for installer
@@ -21,29 +26,36 @@ function create(project, options) {
   try {
     projectDestination = slash(`${process.cwd()}/${project}`);
 
-    if (fileExisted(projectDestination)) {
-      if (options.force) {
-        cinfo('|> Removing project directory including files...');
-
-        if (rm('-rf', projectDestination).code !== 0) {
-          cerror('Exit. Failed to remove all files from existing project directory.');
-          exit(1);
-        }
-      } else {
-        cerror('Cannot proceed. Project directory already existed.');
-        exit(1);
-      }
+    if (!fileExisted(projectDestination)) {
+      return installProject(options);
     }
 
-    if (options.clone) {
-      installByCloning();
+    if (options.force) {
+      cinfo('|> Removing `%s` directory including files...', [project]);
+
+      if (rm('-rf', projectDestination).code !== 0) {
+        cerror('Exit. Failed to remove all files.');
+        exit(1);
+      }
+
+      return installProject(options);
     } else {
-      installByDownloding(options);
+      cerror('Cannot proceed. Project directory already existed.');
+      exit(1);
     }
   } catch (err) {
     cerror(err.stack);
     exit(1);
   }
+}
+
+// start installing project with provided options
+function installProject(options) {
+  if (options.clone) {
+    return installByCloning();
+  }
+
+  return installByDownloding(options);
 }
 
 // install by downloading archive approach (default to master)
@@ -60,7 +72,7 @@ function installByDownloding({ release = 'master' }) {
 
   return download(url, projectDestination, options)
     .then(data => {
-      cinfo('|> Extracted zip archive files into [%s]...', [projectDestination]);
+      csuccess('Extracted zip archive files into [%s]', [projectDestination]);
       data && installDependencies();
     })
     .catch(err => {
@@ -76,36 +88,60 @@ function installByCloning() {
     exit(1);
   }
 
-  return Promise.resolve(true)
-    .then(() => exec(`git clone --depth=1 ${githubRepoUrl}.git ${projectDestination}`))
-    .then(cmdClone => {
-      if (cmdClone.code !== 0) {
-        cerror('Failed to clone universsr boilerplate into [%s].', [projectDestination]);
-        exit(1);
-      }
+  const cloneRepo = exec(
+    `git clone --depth=1 ${githubRepoUrl}.git ${projectDestination}`
+  );
 
-      installDependencies();
-    })
-    .catch(err => {
-      cerror(err);
-      exit(1);
-    });
+  if (cloneRepo.code !== 0) {
+    cerror('Failed to clone universsr boilerplate into [%s].', [
+      projectDestination
+    ]);
+    exit(1);
+  }
+
+  console.log();
+  csuccess('Cloned git repo into [%s]', [projectDestination]);
+
+  return installDependencies();
 }
 
 // install project dependencies after either download or clone action is done
 function installDependencies() {
-  cinfo('|> Installing all dependencies from package.json in project...');
+  return (
+    cd(projectDestination) &&
+    exec(
+      'npm install',
+      { silent },
+      spawnProcess({
+        init: 'Installing required dependencies...',
+        error: 'Failed to install required dependencies.',
+        success: 'Done! Installed dependencies.',
+        wrapup: () => {
+          console.log();
+          cinfo('|> For quick start: `cd %s` and execute `npm start`', [
+            projectDestination.split('/').pop()
+          ]);
+        }
+      })
+    )
+  );
+}
 
-  if (cd(projectDestination) && exec('npm install').code !== 0) {
-    cerror('Failed to install universsr boilerplate dependencies.');
-    exit(1);
-  }
+// spawn process callback for async process
+function spawnProcess({ init, error, success, wrapup = null }) {
+  const spinner = ora(init).start();
 
-  csuccess('Dependencies installed in [%s]!\n', [projectDestination]);
-  cinfo('|> You may type `cd %s` and execute npm script(s) in `package.json` for your development workflow', [
-    projectDestination.split('/').pop()
-  ]);
-  exit(0);
+  return (code, stdout, stderr) => {
+    if (code) {
+      spinner.fail(chalk.red(error));
+      cerror(stderr);
+      exit(1);
+    }
+
+    spinner.succeed(chalk.green(success));
+    wrapup && wrapup();
+    exit(0);
+  };
 }
 
 program
@@ -113,9 +149,18 @@ program
   .description('Installing new universsr boilerplate into project directory.')
   .usage('new [options] <project>')
   .command('new <project>')
-  .option('-c, --clone', 'install universsr boilerplate by cloning the master repository.')
-  .option('-f, --force', 'force fresh install by removing existing project directory before installation starts.')
-  .option('-r, --release <version>', 'specify version of release to download. (default: master)')
+  .option(
+    '-c, --clone',
+    'install universsr boilerplate by cloning the master repository.'
+  )
+  .option(
+    '-f, --force',
+    'force fresh install by removing existing project directory before installation starts.'
+  )
+  .option(
+    '-r, --release <version>',
+    'specify version of release to download. (default: master)'
+  )
   .action(create);
 
 program.on('--help', () => {
