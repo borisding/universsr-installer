@@ -1,13 +1,14 @@
 ## universsr-installer [![npm version](https://img.shields.io/npm/v/universsr-installer.svg?style=flat-square)](https://www.npmjs.com/package/universsr-installer)
 
-* Installer of [universsr](https://github.com/borisding/universsr.git) - Universal React + Redux boilerplate.
+Installer of [universsr](https://github.com/borisding/universsr.git) - Universal React + Redux starter boilerplate.
 
 ## Usage
+> Node version: >= v8.0.0 (to align with starter's requirement)
 
-Install universsr installer globally
+Install program globally:
 
 ```
-npm i universsr-installer -g
+npm i -g universsr-installer
 ```
 
 For example: to create new `my-project` at your current working directory:
@@ -21,26 +22,39 @@ universsr boilerplate will be downloaded and extracted into `my-project` project
 ## Options & Commands
 
 ```
-Usage: index new [options] <project>
+$ universsr --help
 
- Installing new universsr boilerplate into project directory.
+  Description
+    Installing new universsr starter boilerplate into project directory
+
+  Usage
+    $ universsr <command> [options]
+
+  Available Commands
+    new
+
+  For more info, run any command with the `--help` flag
+    $ universsr new --help
+
+  Options
+    -v, --version    Displays current version
+    -h, --help       Displays this message
 
 
- Options:
+$ universsr new --help
 
-   -V, --version  output the version number
-   -h, --help     output usage information
+  Usage
+    $ universsr new <project> [options]
 
+  Options
+    -c, --clone      Install universsr boilerplate by cloning the master repository
+    -f, --force      Force fresh install by removing existing project directory before installation starts
+    -r, --release    Specify version of release to download. (default: master)
+    -h, --help       Displays this message
 
- Commands:
-
-   new [options] <project>
-
- Examples of options usage for new `my-project`:
-
- Clone install:                universsr new -c my-project (clone github repository with depth=1 and install)
- Force clone install:          universsr new -cf my-project (remove all and install new copy with git clone method)
- Force download install:       universsr new -f my-project (remove all and install new copy with download method)
- Download release install:     universsr new -r 'v2.0.0' my-project (download release version v2.0.0 and install)
- Force install release:        universsr new -fr 'v2.0.0' my-project (remove all and download release version v2.0.0 and install)
+  Examples
+    $ universsr new my-project -c
+    $ universsr new my-project -cf
+    $ universsr new my-project -f
+    $ universsr new my-project -r v2.0.0
 ```

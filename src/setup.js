@@ -1,27 +1,15 @@
-#!/usr/bin/env node
-
-const fs = require('fs');
 const chalk = require('chalk');
 const slash = require('slash');
-const program = require('commander');
-const download = require('download');
 const ora = require('ora');
-const pkg = require('./package.json');
+const download = require('download');
 const { cd, exec, exit, rm, which } = require('shelljs');
+const { csuccess, cerror, cinfo, fileExisted } = require('./utils');
 
-const csuccess = (message, substitution = []) =>
-  console.log(chalk.green(`${message}\n`), ...substitution);
-const cerror = (message, substitution = []) =>
-  console.log(chalk.red(`${message}\n`), ...substitution);
-const cinfo = (message, substitution = []) =>
-  console.log(chalk.cyanBright(`${message}\n`), ...substitution);
-
-const fileExisted = target => fs.existsSync(target);
-const githubRepoUrl = 'https://github.com/borisding/universsr';
+const GITHUB_URL = 'https://github.com/borisding/universsr';
 let projectDestination;
 
-// create action for installer
-function create(project, options) {
+// setup action handler
+function setup(project, options) {
   try {
     projectDestination = slash(`${process.cwd()}/${project}`);
 
@@ -30,11 +18,13 @@ function create(project, options) {
     }
 
     if (!options.force) {
-      cerror('Cannot proceed. Project directory already existed.');
+      cerror(
+        'Cannot proceed. Project directory already existed. Provide `--force` option to force install.'
+      );
       exit(1);
     }
 
-    cinfo('|> Removing `%s` directory including files...', [project]);
+    cinfo('|> Removing `%s` directory including files.', [project]);
 
     if (rm('-rf', projectDestination).code !== 0) {
       cerror('Exit. Failed to remove all files.');
@@ -59,7 +49,7 @@ function installProject(options) {
 
 // install by downloading archive approach (default to master)
 function installByDownloding({ release = 'master' }) {
-  const url = `${githubRepoUrl}/archive/${release}.zip`;
+  const url = `${GITHUB_URL}/archive/${release}.zip`;
   const options = {
     headers: { accept: 'application/zip' },
     mode: '755',
@@ -67,7 +57,7 @@ function installByDownloding({ release = 'master' }) {
     extract: true
   };
 
-  cinfo('|> Downloading zip format archive from [%s]...', [url]);
+  cinfo('|> Downloading zip format archive from [%s].', [url]);
 
   return download(url, projectDestination, options)
     .then(data => {
@@ -88,7 +78,7 @@ function installByCloning() {
   }
 
   const cloneRepo = exec(
-    `git clone --depth=1 ${githubRepoUrl}.git ${projectDestination}`
+    `git clone --depth=1 ${GITHUB_URL}.git ${projectDestination}`
   );
 
   if (cloneRepo.code !== 0) {
@@ -110,14 +100,15 @@ function installDependencies() {
     cd(projectDestination) &&
     spawnProcess({
       cmd: 'npm install',
-      init: 'Installing required dependencies...',
+      init: 'Installing required dependencies. It may take a while.',
       error: 'Failed to install required dependencies.',
       success: 'Done! Installed dependencies.',
       wrapup: () => {
         console.log();
-        cinfo('|> For quick start: `cd %s` and execute `npm start`', [
+        cinfo('|> For quick start: `cd %s` and execute `npm run dev`', [
           projectDestination.split('/').pop()
         ]);
+        cinfo('|> Read more on: %s', [GITHUB_URL]);
       }
     })
   );
@@ -140,50 +131,4 @@ function spawnProcess({ cmd, init, error, success, wrapup }) {
   });
 }
 
-program
-  .version(pkg.version)
-  .description('Installing new universsr boilerplate into project directory.')
-  .usage('new [options] <project>')
-  .command('new <project>')
-  .option(
-    '-c, --clone',
-    'install universsr boilerplate by cloning the master repository.'
-  )
-  .option(
-    '-f, --force',
-    'force fresh install by removing existing project directory before installation starts.'
-  )
-  .option(
-    '-r, --release <version>',
-    'specify version of release to download. (default: master)'
-  )
-  .action(create);
-
-program.on('--help', () => {
-  console.log();
-  console.log('  Examples of options usage for new `my-project`:');
-  console.log();
-  console.log(
-    '  Clone install: \t\t%s',
-    'universsr new -c my-project (clone github repository with depth=1 and install)'
-  );
-  console.log(
-    '  Force clone install:\t\t%s',
-    'universsr new -cf my-project (remove all and install new copy with git clone method)'
-  );
-  console.log(
-    '  Force download install:\t%s',
-    'universsr new -f my-project (remove all and install new copy with download method)'
-  );
-  console.log(
-    '  Download release install: \t%s',
-    "universsr new -r 'v2.0.0' my-project (download release version v2.0.0 and install)"
-  );
-  console.log(
-    '  Force install release: \t%s',
-    "universsr new -fr 'v2.0.0' my-project (remove all and download release version v2.0.0 and install)"
-  );
-  console.log();
-});
-
-program.parse(process.argv);
+module.exports = setup;
